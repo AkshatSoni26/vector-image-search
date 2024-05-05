@@ -1,113 +1,154 @@
+"use client"
+
+import { supabase } from "@/lib/supabase";
+import { calculateCosineSimilarity, fetchData, generateRandomEmbedding, hanndleSupabse } from "@/utils";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+
+
+
+interface ImageData {
+  id: number;
+  created_at: string;
+  name: number;
+  embedding: number[];
+  similarity?: number
+}
+
 
 export default function Home() {
+
+  const [input, setInput] = useState<string>('')
+  const [images, setImages] = useState<ImageData[]>([])
+  const [searchArr, setSearchedArr] = useState<ImageData[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
+
+
+  const handleInput = () => {
+    let embedd = input
+    if (input.length == 0) {
+      alert('input is required for processing.')
+      return
+    }
+
+    if (embedd[embedd.length - 1] == ',') {
+      embedd = embedd.slice(0, input.length - 1)
+    }
+
+    let embeddArr = embedd.split(',').map((ele, id) => Number(ele))
+
+    if (embeddArr.length !== 3) {
+      alert('3 input is reuired in this format. e.g. :- float1,float2,float3')
+      return
+    }
+
+    for (let index = 0; index < embeddArr.length; index++) {
+      const element = embeddArr[index];
+      console.log("(-1 < element) || (element > 1) ===========>", (-1 < element) || (element > 1), (-1 < element), (element > 1), element)
+      if ((-1 > element) || (element > 1)) {
+        alert('input is in the -1 to 1 range.')
+        return
+      }
+    }
+
+    setLoading(true)
+
+    const results = images.map((image) => ({
+      ...image,
+      similarity: calculateCosineSimilarity(embeddArr, image.embedding),
+    }));
+
+    // Sort images based on cosine similarity in descending order
+    results.sort((a, b) => b.similarity - a.similarity);
+
+    // Display the top 3 most similar images
+    setSearchedArr(results.slice(0, 3));
+    setLoading(false)
+  }
+
+
+  useEffect(
+    () => {
+      if (images.length == 0) {
+        setLoading(true)
+        fetchData().then(
+          (res: ImageData[] | []) => {
+            const data = res.sort((a, b) => a.name - b.name)
+            setImages(data)
+            setSearchedArr(data)
+            setLoading(false)
+          }
+        ).catch(
+          (err: any) => {
+            console.log('err ======>', err)
+            setLoading(false)
+            setError(true)
+          }
+        )
+      }
+      else {
+        if (input.length == 0) {
+        setLoading(true)
+          setSearchedArr(images)
+          setLoading(false)
+        }
+      }
+    }, [input]
+  )
+
+
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+    <main className="">
+      {
+        !loading
+          ?
+          error
+          ?
+          <div className="flex w-screen h-screen justify-center items-center text-red-800">There is some issue. Please check console.</div>
+          :
+          <div className="p-2 container mx-auto">
+            <div className="text-center p-2 text-lg">Search here for cosine similarity</div>
+            <div className="flex justify-center my-2">
+              <input className="border rounded-md px-4 py-2 focus:outline-none focus:ring focus:border-blue-300 w-[380px] mr-2" placeholder="write embedding e.g. :- float1, float2, float3" value={input} onChange={(e) => setInput(e.target.value)} />
+              <button className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" onClick={handleInput}>
+                click here
+              </button>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              {
+                searchArr.map(
+                  (image, id) => (
+                    <div style={{
+                      margin: '20px'
+                    }}>
+                      <Image
+                        src={require(`@/images/${image.name}.jpg`)}
+                        alt={`${id}`}
+                        width={200}
+                  height={200}
+                  // placeholder="blur" // Use a placeholder
+                      />
+                      <div>Image name:- {image.name}</div>
+                      <div>Image embedding:- {image.embedding.join(' ,')}</div>
+                      {image.similarity && <div>cosine similarity:- {image.similarity}</div>}
+                    </div>
+                  )
+                )
+              }
+            </div>
+          </div>
+          :
+          <div className="flex w-screen h-screen justify-center items-center">
+            <div className="animate-ping h-5 w-5 rounded-full mr-3 bg-blue-800"></div>
+            <div className="text-blue-800">
+              Loading...
+              </div>
+          </div>
+      }
     </main>
   );
 }
+
+            // {/* <button onClick={() => hanndleSupabse(imageData)}>click here</button> */}
