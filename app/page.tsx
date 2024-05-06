@@ -1,19 +1,10 @@
 "use client"
 
-import { supabase } from "@/lib/supabase";
+import { ImageData } from "@/Types/types";
+import Grid from "@/components/Grid";
+import Search from "@/components/Search";
 import { calculateCosineSimilarity, fetchData, generateRandomEmbedding, hanndleSupabse } from "@/utils";
-import Image from "next/image";
 import { useEffect, useState } from "react";
-
-
-
-interface ImageData {
-  id: number;
-  created_at: string;
-  name: number;
-  embedding: number[];
-  similarity?: number
-}
 
 
 export default function Home() {
@@ -89,7 +80,7 @@ export default function Home() {
       }
       else {
         if (input.length == 0) {
-        setLoading(true)
+          setLoading(true)
           setSearchedArr(images)
           setLoading(false)
         }
@@ -105,50 +96,23 @@ export default function Home() {
         !loading
           ?
           error
-          ?
-          <div className="flex w-screen h-screen justify-center items-center text-red-800">There is some issue. Please check console.</div>
-          :
-          <div className="p-2 container mx-auto">
-            <div className="text-center p-2 text-lg">Search here for cosine similarity</div>
-            <div className="flex justify-center my-2">
-              <input className="border rounded-md px-4 py-2 focus:outline-none focus:ring focus:border-blue-300 w-[380px] mr-2" placeholder="write embedding e.g. :- float1, float2, float3" value={input} onChange={(e) => setInput(e.target.value)} />
-              <button className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" onClick={handleInput}>
-                click here
-              </button>
+            ?
+            <div className="flex w-screen h-screen justify-center items-center text-red-800">There is some issue. Please check console.</div>
+            :
+            <div className="p-2 container mx-auto">
+              <Search input={input} setInput={setInput} handleInput={handleInput} />
+              <Grid searchArr={searchArr} />
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              {
-                searchArr.map(
-                  (image, id) => (
-                    <div style={{
-                      margin: '20px'
-                    }}>
-                      <Image
-                        src={require(`@/images/${image.name}.jpg`)}
-                        alt={`${id}`}
-                        width={200}
-                  height={200}
-                  // placeholder="blur" // Use a placeholder
-                      />
-                      <div>Image name:- {image.name}</div>
-                      <div>Image embedding:- {image.embedding.join(' ,')}</div>
-                      {image.similarity && <div>cosine similarity:- {image.similarity}</div>}
-                    </div>
-                  )
-                )
-              }
-            </div>
-          </div>
           :
           <div className="flex w-screen h-screen justify-center items-center">
             <div className="animate-ping h-5 w-5 rounded-full mr-3 bg-blue-800"></div>
             <div className="text-blue-800">
               Loading...
-              </div>
+            </div>
           </div>
       }
     </main>
   );
 }
 
-            // {/* <button onClick={() => hanndleSupabse(imageData)}>click here</button> */}
+// {/* <button onClick={() => hanndleSupabse(imageData)}>click here</button> */}

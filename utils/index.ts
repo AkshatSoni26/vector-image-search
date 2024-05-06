@@ -1,3 +1,4 @@
+import { RandomEmbeddingType } from "@/Types/types";
 import { supabase } from "@/lib/supabase";
 
 export const randomFloatInRange = (min: number, max: number): number => {
@@ -5,11 +6,6 @@ export const randomFloatInRange = (min: number, max: number): number => {
   return parseFloat(randomNumber.toFixed(2));
 };
 
-interface RandomEmbeddingType {
-  min: number, 
-  max: number
-  dimensions?: number, 
-}
 
 export function generateRandomEmbedding({dimensions=3, min, max}: RandomEmbeddingType): number[] {
   // Generates a random embedding with the specified number of dimensions.
